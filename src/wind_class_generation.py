@@ -110,10 +110,10 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
     windSpeedArrayCul = np.where(windSpeedArrayCul >= 6.5, 3,windSpeedArrayCul)
 
 
-    #transpose to set correct bounds for lat long
+    # Transpose to set correct bounds for lat long
     windSpeedArrayCul = windSpeedArrayCul.T
 
-    #test ploting for debugging/visuals
+    # Test ploting for debugging/visuals
     '''
     ax = sns.heatmap(windSpeedArrayCul)
     plt.ylabel("Long")
@@ -123,11 +123,11 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
     '''
     df = pd.DataFrame(windSpeedArrayCul).T
 
-    #need to enter filepath for writing to excel worksheet, format: rows: 0-36 (lat values) cols: 0 -30 (long values), shape is (37,31)
-    #(0,0) bottom left of united states in the ocean, (36,0) top left near Washington!, (0,30) bottom right edge of Texas, (36,30) top right near Montana
+    # Need to enter filepath for writing to excel worksheet, format: rows: 0-36 (lat values) cols: 0 -30 (long values), shape is (37,31)
+    # (0,0) bottom left of united states in the ocean, (36,0) top left near Washington!, (0,30) bottom right edge of Texas, (36,30) top right near Montana
     filePath = excelFilePath
     
-    #if file path already exists, changes filepath to a new excel worksheet with unique time in format of day_month_year hour_minute_second
+    # If file path already exists, changes filepath to a new excel worksheet with unique time in format of day_month_year hour_minute_second
     if os.path.isfile(filePath):
         print("Tried overwriting file " + filePath + "\n")
         dt_string = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")

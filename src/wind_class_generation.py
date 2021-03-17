@@ -27,10 +27,11 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
 
     windSpeedArrayCul = np.zeros((latLength,longLength))
 
-    #used in calculating hourly wind shear value 
+    # Used in calculating hourly wind shear value 
     windScaleValue = np.log(50/10)
 
-    #loading in array of offshore features in dataset will be setting IEC class to level 4 (value is 1 for offshore 0 not)
+    # Loading in array of offshore features in dataset will be setting IEC class to 
+    # level 4 (value is 1 for offshore 0 not)
     offshoreBoundsFilePath = "offshore_MERRA_Format_Bounds.xlsx"
     if not (os.path.isfile(offshoreBoundsFilePath)):
         error_message = 'No offshore MERRA format data, have you run generate_offshore_bounds?'
@@ -38,13 +39,13 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
     else:
         offshoreBounds = pd.read_excel(offshoreBoundsFilePath,index_col=0).values
 
-    #uses values available from 2016-18
+    # Uses values available from 2016-18
     for year in yearList:
-        #may need to change file name for location of coord data not included in github due to file size
+        # May need to change file name for location of coord data not included in github due to file size
         fileName = rawDataFilePath + str(year) + ".nc"
         rawData = Dataset(fileName)
 
-        #getting 50 and 10 meter wind speeds in order to extrapolate to 100 meters where IEC values are measured
+        # Getting 50 and 10 meter wind speeds in order to extrapolate to 100 meters where IEC values are measured
         eastwardWind50 = rawData.variables["U50M"]
         northwardWind50 = rawData.variables["V50M"]
         eastwardWind10 = rawData.variables["U10M"]
@@ -54,28 +55,28 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
         for lat in range(0,latLength):
             for lon in range(0,longLength):
 
-                #if offshore wind speed subtract negative but later converted to IEC class level 4 for wind yet to be implemented, if not offshore continue
-                #with onshore calculations
+                # If offshore wind speed subtract negative but later converted to IEC class level 4 for wind yet to be implemented, if not offshore continue
+                # With onshore calculations
                 if offshoreBounds[lat][lon] == 1:
                     iecLevel = -1
                     windSpeedArrayCul[lat][lon] += iecLevel
                     latLongIndex += 1
                     continue                    
-                #combine east and north values to get one single wind speed
+                # Combine east and north values to get one single wind speed
                 finalWindSpeed50 = np.sqrt((eastwardWind50[latLongIndex][:][:]**2) + (northwardWind50[latLongIndex][:][:]**2))
                 finalWindSpeed10 = np.sqrt((eastwardWind10[latLongIndex][:][:]**2) + (northwardWind10[latLongIndex][:][:]**2))
                 
-                #generating hourly time series for alpha using Time-Averaged Shear Exponent
+                # Generating hourly time series for alpha using Time-Averaged Shear Exponent
                 wind_sheer = (np.log(finalWindSpeed50/finalWindSpeed10))/windScaleValue
     
 
-                #converting to final wind speed at 100 from 50 meters data measurement
+                # Converting to final wind speed at 100 from 50 meters data measurement
                 finalWindSpeed100 = finalWindSpeed50 * (2 ** wind_sheer)
 
-                #papers talk about median giving more accurate estimations
+                # Papers talk about median giving more accurate estimations
                 finalWindSpeed = np.median(finalWindSpeed100)
 
-                #used for assinging iec levels for each year, slow way, could use np.where instead, but easier to understand
+                # Used for assinging iec levels for each year, slow way, could use np.where instead, but easier to understand
                 '''
                 if finalWindSpeed >= 9:
                     iecLevel = 1
@@ -90,23 +91,23 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
                 latLongIndex += 1
     print("Finished combining wind eastward and northward components and scaling to turbine height of 100m")
 
-    #finding mean for each lat long wind speed value for time period of years
+    # Finding mean for each lat long wind speed value for time period of years
     windSpeedArrayCul = windSpeedArrayCul / len(yearList)
 
-    #values not suitable for wind are assigned 0 value
+    # Values not suitable for wind are assigned 0 value
     windSpeedArrayCul = np.where((windSpeedArrayCul < 6.5) & (windSpeedArrayCul >= 0), 0,windSpeedArrayCul)
 
-    #Wind IEC level 1  anything >= 9 m/s
+    # Wind level 4 offshore wind anything >= 11.25 m/s
+    windSpeedArrayCul = np.where(windSpeedArrayCul >= 11.25, 4,windSpeedArrayCul)
+
+    # Wind IEC level 1  anything >= 9 m/s - modified for offshore anything beteween 9 -> 11.25 m/s
     windSpeedArrayCul = np.where(windSpeedArrayCul >= 9, 1,windSpeedArrayCul)
 
-    #Wind IEC level 2 8 m/s -> 9 m/s
+    # Wind IEC level 2 8 m/s -> 9 m/s
     windSpeedArrayCul = np.where(windSpeedArrayCul >= 8, 2,windSpeedArrayCul)
 
-    #Wind IEC level 3 6.5 m/s -> 8 m/s
+    # Wind IEC level 3 6.5 m/s -> 8 m/s
     windSpeedArrayCul = np.where(windSpeedArrayCul >= 6.5, 3,windSpeedArrayCul)
-
-    #Wind level 4 offshore wind yet to be developed
-    windSpeedArrayCul = np.where(windSpeedArrayCul >= 11.25, 4,windSpeedArrayCul)
 
 
     #transpose to set correct bounds for lat long

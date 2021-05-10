@@ -29,14 +29,18 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
 
     # Used in calculating hourly wind shear value 
     windScaleValue = np.log(50/10)
+
+    
+
     # Loading in array of offshore features in dataset will be setting IEC class to 
     # level 4 (value is 1 for offshore 0 not)
-    #offshoreBoundsFilePath = "offshore_MERRA_Format_Bounds.xlsx"
-    #if not (os.path.isfile(offshoreBoundsFilePath)):
-        #error_message = 'No offshore MERRA format data, have you run generate_offshore_bounds?'
-        #raise RuntimeError(error_message)
-    #else:
-        #offshoreBounds = pd.read_excel(offshoreBoundsFilePath,index_col=0).values
+    offshoreBoundsFilePath = "offshore_MERRA_Format_Bounds.xlsx"
+    if not (os.path.isfile(offshoreBoundsFilePath)):
+        error_message = 'No offshore MERRA format data, have you run generate_offshore_bounds?'
+        raise RuntimeError(error_message)
+    else:
+        offshoreBounds = pd.read_excel(offshoreBoundsFilePath,index_col=0).values
+
 
     # Uses values available from 2016-18
     for year in yearList:
@@ -56,19 +60,20 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
 
                 # If offshore wind speed subtract negative but later converted to IEC class level 4 for wind yet to be implemented, if not offshore continue
                 # With onshore calculations
-
-                #if offshoreBounds[lat][lon] == 1:
-                    #iecLevel = -1
-                    #windSpeedArrayCul[lat][lon] += iecLevel
-                    #latLongIndex += 1
-                    #continue  
+            
+                if offshoreBounds[lat][lon] == 1:
+                    iecLevel = -1
+                    windSpeedArrayCul[lat][lon] += iecLevel
+                    latLongIndex += 1
+                    continue      
+                              
                 # Combine east and north values to get one single wind speed
                 finalWindSpeed50 = np.sqrt((eastwardWind50[latLongIndex][:][:]**2) + (northwardWind50[latLongIndex][:][:]**2))
                 finalWindSpeed10 = np.sqrt((eastwardWind10[latLongIndex][:][:]**2) + (northwardWind10[latLongIndex][:][:]**2))
-
+                
                 # Generating hourly time series for alpha using Time-Averaged Shear Exponent
                 wind_sheer = (np.log(finalWindSpeed50/finalWindSpeed10))/windScaleValue
-
+    
 
                 # Converting to final wind speed at 100 from 50 meters data measurement
                 finalWindSpeed100 = finalWindSpeed50 * (2 ** wind_sheer)
@@ -98,7 +103,7 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
     windSpeedArrayCul = np.where((windSpeedArrayCul < 6.5) & (windSpeedArrayCul >= 0), 0,windSpeedArrayCul)
 
     # Wind level 4 offshore wind anything >= 11.25 m/s
-    #windSpeedArrayCul = np.where(windSpeedArrayCul >= 11.25, 4,windSpeedArrayCul)
+    windSpeedArrayCul = np.where(windSpeedArrayCul >= 11.25, 4,windSpeedArrayCul)
 
     # Wind IEC level 1  anything >= 9 m/s - modified for offshore anything beteween 9 -> 11.25 m/s
     windSpeedArrayCul = np.where(windSpeedArrayCul >= 9, 1,windSpeedArrayCul)
@@ -109,18 +114,6 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
     # Wind IEC level 3 6.5 m/s -> 8 m/s
     windSpeedArrayCul = np.where(windSpeedArrayCul >= 6.5, 3,windSpeedArrayCul)
 
-    #print(windSpeedArrayCul.shape)
-    windSpeedArrayCul[:-1, -1] = 4
-    windSpeedArrayCul[:-2, -2] =4
-    windSpeedArrayCul[:-3, -3] = 4
-    windSpeedArrayCul[:6, -6:-3] = 4
-    windSpeedArrayCul[:5, -9:-6] = 4
-    windSpeedArrayCul[:3, -10] = 4
-    windSpeedArrayCul[:2, -13] = 4
-    windSpeedArrayCul[1, -11] = 4
-    windSpeedArrayCul[3, -11] = 4
-    windSpeedArrayCul[6, -5] = 4
-    windSpeedArrayCul[8:10, -4] = 4
 
     # Transpose to set correct bounds for lat long
     windSpeedArrayCul = windSpeedArrayCul.T
@@ -138,7 +131,7 @@ def main(yearList, latLength, longLength, excelFilePath, rawDataFilePath):
     # Need to enter filepath for writing to excel worksheet, format: rows: 0-36 (lat values) cols: 0 -30 (long values), shape is (37,31)
     # (0,0) bottom left of united states in the ocean, (36,0) top left near Washington!, (0,30) bottom right edge of Texas, (36,30) top right near Montana
     filePath = excelFilePath
-
+    
     # If file path already exists, changes filepath to a new excel worksheet with unique time in format of day_month_year hour_minute_second
     if os.path.isfile(filePath):
         print("Tried overwriting file " + filePath + "\n")

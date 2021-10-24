@@ -12,7 +12,8 @@ Along with the standard instructions provided in [PowGen](https://github.com/ijb
 `
 import numpy as np
 import pandas as pd
-from scipy.interpolate import interp1d`
+from scipy.interpolate import interp1d
+`
 
 # Interpolate the power curve values to make them homogeneous to the range of onshore wind turbine
 # power outputs from SAM

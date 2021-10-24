@@ -9,10 +9,10 @@ This codebase is an extension of the the python module developed by students and
 
 Along with the standard instructions provided in [PowGen](https://github.com/ijbd/powGen), the selection of offshore wind turbine is very critical. SAM database lists a number of onshore wind turbines, but only a few offshore wind turbines. For my doctoral research, we used the Senvion 6.2-MW offshore wind turbine from the database. Once you have chosen an appropriate offshore wind turbine, copy the wind turbine power curve values by right-clicking on the image of the curve in the SAM GUI as a python list, and interpolate the values to match the wind speed intervals of onshore wind turbines. This can be simply achieved by cop
 
-`# Import libraries
+`
 import numpy as np
 import pandas as pd
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d`
 
 # Interpolate the power curve values to make them homogeneous to the range of onshore wind turbine
 # power outputs from SAM
